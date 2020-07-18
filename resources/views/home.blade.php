@@ -2,8 +2,10 @@
 
 @section('content')
     <div class="flex">
-        <div>1</div>
-        <div>2</div>
-        <div>3</div>
+        <div class="flex-1">
+            @include ('_sidebar-links')
+        </div>
+        <div class="flex-1">2</div>
+        <div class="flex-1">3</div>
     </div>
 @endsection
