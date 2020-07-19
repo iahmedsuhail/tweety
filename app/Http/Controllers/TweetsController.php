@@ -18,4 +18,11 @@ class TweetsController extends Controller
 
         return redirect('/home');
     }
+
+    public function index()
+    {
+        return view('tweets.index', [
+            'tweets' => auth()->user()->timeline()
+        ]);
+    }
 }
