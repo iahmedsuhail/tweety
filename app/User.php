@@ -2,26 +2,32 @@
 
 namespace App;
 
-use Illuminate\Notifications\Notifiable;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use App\Tweet;
 
 class User extends Authenticatable
 {
-    use Notifiable, Followable;
+    use Notifiable;
 
     /**
      * The attributes that are mass assignable.
      *
      * @var array
      */
-    protected $guarded = [];
+    protected $fillable = [
+        'name', 'email', 'password',
+    ];
 
     /**
      * The attributes that should be hidden for arrays.
      *
      * @var array
      */
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = [
+        'password', 'remember_token',
+    ];
 
     /**
      * The attributes that should be cast to native types.
@@ -32,41 +38,41 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
-    public function getAvatarAttribute($value)
-    {
-        return asset($value ?: '/images/default-avatar.jpeg');
-    }
-
-    public function setPasswordAttribute($value)
-    {
-        $this->attributes['password'] = bcrypt($value);
-    }
-
     public function timeline()
     {
+        // This method here should return the users tweets as well as the 
+        // tweets of the users that the current user follows
+        // in descending order by date
+
         $friends = $this->follows()->pluck('id');
 
         return Tweet::whereIn('user_id', $friends)
-            ->orWhere('user_id', $this->id)
-            ->withLikes()
-            ->orderByDesc('id')
-            ->paginate(50);
+        ->orWhere('user_id', $this->id)
+        ->latest()->get();
     }
 
     public function tweets()
     {
-        return $this->hasMany(Tweet::class)->latest();
+        return $this->hasMany(Tweet::class);
     }
 
-    public function likes()
+    public function getAvatarAttribute()
     {
-        return $this->hasMany(Like::class);
+        return "https://i.pravatar.cc/200?u=" . $this->email;
     }
 
-    public function path($append = '')
+    public function follows()
     {
-        $path = route('profile', $this->username);
+        return $this->belongsToMany(User::class, 'follows', 'user_id', 'following_user_id');
+    }
 
-        return $append ? "{$path}/{$append}" : $path;
+    public function follow(User $user)
+    {
+        return $this->follows()->save($user);
+    }
+
+    public function getRouteKeyName()
+    {
+        return 'name';
     }
 }
