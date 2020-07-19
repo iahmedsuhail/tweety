@@ -2,32 +2,26 @@
 
 namespace App;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use App\Tweet;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable
 {
-    use Notifiable;
+    use Notifiable, Followable;
 
     /**
      * The attributes that are mass assignable.
      *
      * @var array
      */
-    protected $fillable = [
-        'name', 'email', 'password',
-    ];
+    protected $fillable = ['name', 'email', 'password'];
 
     /**
      * The attributes that should be hidden for arrays.
      *
      * @var array
      */
-    protected $hidden = [
-        'password', 'remember_token',
-    ];
+    protected $hidden = ['password', 'remember_token'];
 
     /**
      * The attributes that should be cast to native types.
@@ -35,44 +29,31 @@ class User extends Authenticatable
      * @var array
      */
     protected $casts = [
-        'email_verified_at' => 'datetime',
+        'email_verified_at' => 'datetime'
     ];
-
-    public function timeline()
-    {
-        // This method here should return the users tweets as well as the 
-        // tweets of the users that the current user follows
-        // in descending order by date
-
-        $friends = $this->follows()->pluck('id');
-
-        return Tweet::whereIn('user_id', $friends)
-        ->orWhere('user_id', $this->id)
-        ->latest()->get();
-    }
-
-    public function tweets()
-    {
-        return $this->hasMany(Tweet::class);
-    }
 
     public function getAvatarAttribute()
     {
         return "https://i.pravatar.cc/200?u=" . $this->email;
     }
 
-    public function follows()
+    public function timeline()
     {
-        return $this->belongsToMany(User::class, 'follows', 'user_id', 'following_user_id');
+        $friends = $this->follows()->pluck('id');
+
+        return Tweet::whereIn('user_id', $friends)
+            ->orWhere('user_id', $this->id)
+            ->latest()
+            ->get();
     }
 
-    public function follow(User $user)
+    public function tweets()
     {
-        return $this->follows()->save($user);
+        return $this->hasMany(Tweet::class)->latest();
     }
 
-    public function getRouteKeyName()
+    public function path()
     {
-        return 'name';
+        return route('profile', $this->name);
     }
 }
